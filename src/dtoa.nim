@@ -16,7 +16,7 @@ type
     f: uint64
     e: int
 
-func newDiyFp(d: float64): DiyFp =
+func newDiyFp(d: float64): DiyFp {.inline.} =
   let u64 = cast[uint64](d)
   let biased_e = (u64 and kDpExponentMask) shr kDpSignificandSize
   let significand = (u64 and kDpSignificandMask)
@@ -27,17 +27,17 @@ func newDiyFp(d: float64): DiyFp =
     result.f = significand
     result.e = kDpMinExponent + 1
 
-func newDiyFp(f: uint64, e: int): DiyFp =
+func newDiyFp(f: uint64, e: int): DiyFp {.inline.} =
   result.f = f
   result.e = e
 
-func `-`(self, rhs: DiyFp): DiyFp =
+func `-`(self, rhs: DiyFp): DiyFp {.inline.} =
   doAssert self.e == rhs.e
   doAssert self.f >= rhs.f
   result.f = self.f - rhs.f
   result.e = self.e
 
-func `*`(self, rhs: DiyFp): DiyFp =
+func `*`(self, rhs: DiyFp): DiyFp {.inline.} =
   const
     M32 = 0xFFFFFFFF'u64
   let
@@ -55,12 +55,12 @@ func `*`(self, rhs: DiyFp): DiyFp =
   result = newDiyFp(ac + (ad shr 32) + (bc shr 32) + (tmp shr 32),
                     self.e + rhs.e + 64)
 
-func normalize(self: DiyFp): DiyFp =
+func normalize(self: DiyFp): DiyFp {.inline.} =
   result = self
   let s = countLeadingZeroBits(self.f)
   result = newDiyFp(self.f shl s, self.e - s)
 
-func normalizeBoundary(self: DiyFp): DiyFp =
+func normalizeBoundary(self: DiyFp): DiyFp {.inline.} =
   result = self
   while (result.f and (kDpHiddenBit shl 1)) == 0:
     result.f = result.f shl 1
@@ -72,7 +72,7 @@ func normalizeBoundary(self: DiyFp): DiyFp =
   # result.e = self.e - s
 
 func normalizedBoundaries(self: DiyFp):
-  tuple[minus: DiyFp, plus: DiyFp] =
+  tuple[minus: DiyFp, plus: DiyFp] {.inline.} =
   result.plus = newDiyFp((self.f shl 1) + 1, self.e - 1).normalizeBoundary()
   if self.f == kDpHiddenBit:
     result.minus = newDiyFp((self.f shl 2) - 1, self.e - 2)
@@ -81,7 +81,7 @@ func normalizedBoundaries(self: DiyFp):
   result.minus.f = result.minus.f shl (result.minus.e - result.plus.e)
   result.minus.e = result.plus.e
 
-func getCachedPower(e: int): tuple[fp: DiyFp, K: int] =
+func getCachedPower(e: int): tuple[fp: DiyFp, K: int] {.inline.} =
   # 10^-348, 10^-340, ..., 10^340
   const kCachedPowers_F = [
     0xfa8fd5a0081c0288'u64, 0xbaaee17fa23ebf76'u64,
