@@ -10,6 +10,7 @@ const kDpSignificandSize = 52
 const kDpExponentBias = 0x3FF + kDpSignificandSize
 const kDpMinExponent = -kDpExponentBias
 const kDpExponentMask = 0x7FF0000000000000'u64
+const kDpSignMask = 0x8000000000000000'u64
 
 type
   DiyFp = object
@@ -67,9 +68,6 @@ func normalizeBoundary(self: DiyFp): DiyFp {.inline.} =
     result.e = result.e - 1
   result.f = result.f shl (kDiySignificandSize - kDpSignificandSize - 2);
   result.e = result.e - (kDiySignificandSize - kDpSignificandSize - 2);
-  # let s = countLeadingZeroBits(result.f)
-  # result.f = self.f shl s
-  # result.e = self.e - s
 
 func normalizedBoundaries(self: DiyFp):
   tuple[minus: DiyFp, plus: DiyFp] {.inline.} =
@@ -353,14 +351,19 @@ func dtoa*(value: float64): string =
     value = value
     outOff = 0
 
+  let u64 = cast[uint64](value)
+  # Handle some edge cases here
   if value == 0:
-    result = "0.0"
-    return
+    # Signed zeros
+    return if (u64 and kDpSignMask) != 0: "-0.0" else: "0.0"
+  elif (u64 and kDpExponentMask) == kDpExponentMask:
+    # Nan/Inf
+    return if (u64 and kDpSignificandMask) != 0: "nan" else: "inf"
 
   # Should be enough for every number out there
   result = newString(32)
 
-  if value < 0:
+  if (u64 and kDpSignMask) != 0:
     value = -value
     result[0] = '-'
     outOff += 1
